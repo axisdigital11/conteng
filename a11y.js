@@ -18,7 +18,35 @@
     ['noanim', 'עצירת אנימציות', '❚❚'],
     ['cursor', 'סמן עכבר גדול', '➚']
   ];
-  var FS_LABELS = ['100%', '112%', '125%', '140%'];
+  var FS_LABELS = ['100%', '115%', '130%', '150%'];
+  var FS_FACTORS = [1, 1.15, 1.3, 1.5];
+
+  /* הגדלת טקסט בלבד: כל אלמנט מקבל גודל גופן מפורש לפי הגודל המקורי שלו כפול המקדם.
+     תמונות, רווחים ומבנה העמוד לא משתנים. */
+  var scaled = [];
+  function scaleText() {
+    scaled.forEach(function (x) { x.el.style.fontSize = x.orig; });
+    scaled = [];
+    var f = FS_FACTORS[state.fs || 0];
+    if (f === 1 || !document.body) return;
+    var list = [];
+    var all = document.body.querySelectorAll('*');
+    for (var i = 0; i < all.length; i++) {
+      var el = all[i];
+      if (/^(SCRIPT|STYLE|IMG|IFRAME|BR|svg)$/i.test(el.tagName) || el.closest('svg,.a11y-root')) continue;
+      list.push([el, parseFloat(getComputedStyle(el).fontSize)]);
+    }
+    list.forEach(function (p) {
+      scaled.push({ el: p[0], orig: p[0].style.fontSize });
+      p[0].style.fontSize = (p[1] * f) + 'px';
+    });
+  }
+  var rsT;
+  window.addEventListener('resize', function () {
+    if (!state.fs) return;
+    clearTimeout(rsT);
+    rsT = setTimeout(scaleText, 200);
+  });
 
   var cursorSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Cpath d='M4 2l30 26-13 2 8 14-6 3-8-14-11 9z' fill='%23000' stroke='%23fff' stroke-width='2.5' stroke-linejoin='round'/%3E%3C/svg%3E";
   var EXCL = 'body>:not(.a11y-root):not(script)';
@@ -51,11 +79,8 @@
     '.a11y-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}',
     '@media (max-width:640px){.a11y-root{left:19px;bottom:16px}.a11y-btn{width:46px;height:46px}.a11y-btn svg{width:26px;height:26px}.a11y-panel{left:8px;right:8px;bottom:8px;width:auto;max-width:none;max-height:calc(100vh - 16px)}}',
     /* מצבים */
-    /* הגדלת טקסט: רק תוכן וזרימה רגילה - אלמנטים קבועים (הדר, כפתורים צפים) נשארים במקום */
-    'html.a11y-fs1 :is(body>main,body>footer){zoom:1.12}html.a11y-fs1 header .nav-links{font-size:18px}',
-    'html.a11y-fs2 :is(body>main,body>footer){zoom:1.25}html.a11y-fs2 header .nav-links{font-size:20px}',
-    'html.a11y-fs3 :is(body>main,body>footer){zoom:1.4}html.a11y-fs3 header .nav-links{font-size:22px}',
-    '@media (max-width:420px){html.a11y-fs1 :is(body>main,body>footer){zoom:1.06}html.a11y-fs2 :is(body>main,body>footer){zoom:1.12}html.a11y-fs3 :is(body>main,body>footer){zoom:1.18}}',
+    /* בהגדלת טקסט - כותרות שלא נשברות בדרך כלל מורשות לרדת שורה */
+    'html[class*="a11y-fs"] .hero h1 .l{white-space:normal!important}',
     'html.a11y-gray ' + EXCL + '{filter:grayscale(1)}',
     'html.a11y-invert ' + EXCL + '{filter:invert(1) hue-rotate(180deg)}',
     'html.a11y-invert ' + EXCL + ' img,html.a11y-invert ' + EXCL + ' iframe{filter:invert(1) hue-rotate(180deg)}',
@@ -82,6 +107,7 @@
   function apply() {
     OPTIONS.forEach(function (o) { root.classList.toggle('a11y-' + o[0], !!state[o[0]]); });
     for (var i = 1; i <= 3; i++) root.classList.toggle('a11y-fs' + i, state.fs === i);
+    scaleText();
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
     if (panel) {
       OPTIONS.forEach(function (o) {

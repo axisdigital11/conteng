@@ -338,6 +338,7 @@ main:focus{outline:none}
 .hero h1,.hero .lead,.hero .eyebrow{text-shadow:0 2px 14px rgba(11,17,32,.85)}
 header:not(.scrolled) .nav-links a{color:#D5DAE3;text-shadow:0 1px 8px rgba(11,17,32,.9)}
 .clients-strip{position:relative}
+.marq-pause[hidden],.car-pause[hidden]{display:none}
 .marq-pause{position:absolute;inset-inline-end:12px;top:50%;transform:translateY(-50%);z-index:2;width:38px;height:38px;border-radius:50%;border:2px solid var(--sand-ink);background:#fff;color:var(--sand-ink);font-weight:800;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .marquee.paused .marquee-track,.marquee:hover .marquee-track{animation-play-state:paused}
 .car-pause{position:absolute;top:12px;left:12px;z-index:3;height:34px;padding:0 14px;border-radius:999px;border:none;background:rgba(11,17,32,.78);color:#fff;font-family:var(--body);font-size:13.5px;font-weight:700;cursor:pointer}
@@ -657,7 +658,7 @@ footer .wrap{padding-inline-end:104px}
           <!-- חוץ / פנים -->
           <line x1="70" y1="296" x2="326" y2="296" stroke="#8FA8D8" stroke-width="1.2"/>
           <polyline points="78,291 70,296 78,301" stroke="#8FA8D8" stroke-width="1.2"/>
-          <polyline points="318,291 326,296 318,301" stroke="#8FA8D8" stroke-width="1.2"/>
+          <polyline points="318,291 326,296 318,301" stroke="#8FA8D8" stroke-width="1.2"/><text x="198" y="321" fill="#8FA8D8" font-family="Assistant,sans-serif" font-size="14" font-weight="700" text-anchor="middle">חתך קיר - מהחוץ לפנים</text>
           <text x="40" y="170" fill="#F3F1EC" font-family="Assistant,sans-serif" font-size="18" font-weight="800" text-anchor="middle">חוץ</text>
           <text x="400" y="170" fill="#F3F1EC" font-family="Assistant,sans-serif" font-size="18" font-weight="800" text-anchor="middle">פנים</text>
           
@@ -926,7 +927,7 @@ footer .wrap{padding-inline-end:104px}
     <div class="foot">
       <span class="logo">CONTENG</span>
       <span>חטיבת המגורים של קונטיין הנדסה בע"מ</span>
-      <span dir="ltr">info@contain.co.il</span>
+      <span dir="ltr">hello@conteng.co.il</span>
       <a href="privacy.html">מדיניות פרטיות</a>
       <a href="accessibility.html">הצהרת נגישות</a>
     </div>
@@ -978,14 +979,17 @@ document.querySelectorAll('.model-media,.custom-photo,.proof-car').forEach(m=>{
   m.querySelector('.car.prev')?.addEventListener('click',e=>{e.stopPropagation();show(idx-1,true);});
 });
 const pcar=document.querySelector('.proof-car');
-if(pcar){let hover=false,focus=false,stopped=noMotion();
+if(pcar){let hover=false,focus=false,stopped=false;
   const pb=document.createElement('button');pb.type='button';pb.className='car-pause';pcar.appendChild(pb);
   const setPb=()=>{pb.innerHTML=stopped?'<span aria-hidden="true">▶</span> הפעלה<span class="sr-only"> של החלפת התמונות האוטומטית</span>':'<span aria-hidden="true">❚❚</span> עצירה<span class="sr-only"> של החלפת התמונות האוטומטית</span>';};
   setPb();
   pb.addEventListener('click',e=>{e.stopPropagation();stopped=!stopped;setPb();});
   pcar.addEventListener('mouseenter',()=>hover=true);pcar.addEventListener('mouseleave',()=>hover=false);
   pcar.addEventListener('focusin',()=>focus=true);pcar.addEventListener('focusout',()=>focus=false);
-  document.addEventListener('a11ychange',()=>{if(noMotion()&&!stopped){stopped=true;setPb();}});
+  /* כשהתנועה כבויה (הגדרת מערכת או תפריט הנגישות) אין מה לעצור - הכפתור מוסתר */
+  const syncPb=()=>{pb.hidden=noMotion();};syncPb();
+  document.addEventListener('a11ychange',syncPb);
+  matchMedia('(prefers-reduced-motion: reduce)').addEventListener?.('change',syncPb);
   setInterval(()=>{if(!stopped&&!hover&&!focus&&!document.hidden&&!noMotion())pcar._next();},2000);
 }
 
@@ -993,9 +997,11 @@ if(pcar){let hover=false,focus=false,stopped=noMotion();
 const marq=document.getElementById('marquee'),mp=document.getElementById('marqPause');
 if(marq&&mp){
   const setMp=p=>{marq.classList.toggle('paused',p);mp.innerHTML='<span aria-hidden="true">'+(p?'▶':'❚❚')+'</span>';mp.setAttribute('aria-label',p?'הפעלת תנועת הלוגואים':'עצירת תנועת הלוגואים');};
-  setMp(noMotion());
+  setMp(false);
+  const syncMp=()=>{mp.hidden=noMotion();};syncMp();
+  matchMedia('(prefers-reduced-motion: reduce)').addEventListener?.('change',syncMp);
   mp.addEventListener('click',()=>setMp(!marq.classList.contains('paused')));
-  document.addEventListener('a11ychange',()=>{if(noMotion())setMp(true);});
+  document.addEventListener('a11ychange',syncMp);
 }
 
 /* ─── חשיפה בגלילה ─── */
